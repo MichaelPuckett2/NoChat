@@ -1,0 +1,91 @@
+﻿@page "/"
+@using TripleG3.NoChat.Web.Model
+@inject ChatManager ChatManager
+@rendermode InteractiveServer
+@implements IDisposable
+
+<PageTitle>Counter</PageTitle>
+
+<h1>NoChat</h1>
+
+<label for="key">Key</label>
+<p></p>
+<InputText id="key" @bind-Value="Key" />
+<p></p>
+
+<h4>Messages</h4>
+
+<div style="scroll-behavior: auto">
+    @foreach (var message in Messages.TakeLast(10))
+    {
+        <div>@message</div>
+    }
+</div>
+-----------------------------------------------------------------------
+<p></p>
+<InputText @bind-Value="Message" @onkeyup=MessageKeyPressed/>
+<button class="btn btn-primary" @onclick=SendMessage>Send</button>
+
+<p></p>
+
+<button class="btn btn-primary" @onclick=@ClearMessages>Clear</button>
+
+@code {
+    public string Key { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+    public List<string> Messages { get; set; } = new List<string>();
+
+    protected override void OnInitialized()
+    {
+        ChatManager.MessageSent += OnMessageSent;
+        ChatManager.MessagesCleared += OnMessagesCleared;
+        base.OnInitialized();
+    }
+
+    private void OnMessageSent(ChatMessage chatMessage)
+    {
+        if (chatMessage.Key == Key)
+        {
+            Messages.Add(chatMessage.Message);
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(Message)) return;
+        ChatManager.SendMessage(new ChatMessage(Key, Message));
+        Message = string.Empty;
+    }
+
+    private void ClearMessages()
+    {
+        ChatManager.ClearMessages(Key);
+        Key = string.Empty;
+        Message = string.Empty;
+    }
+
+    private void MessageKeyPressed(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            SendMessage();
+        }
+    }
+
+    private void OnMessagesCleared(string key)
+    {
+        if (Key == key)
+        {
+            Messages.Clear();
+            Key = string.Empty;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose()
+    {
+        ChatManager.MessageSent -= OnMessageSent;
+        ChatManager.MessagesCleared -= OnMessagesCleared;
+    }
+}
