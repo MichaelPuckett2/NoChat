@@ -4,88 +4,67 @@
 @rendermode InteractiveServer
 @implements IDisposable
 
-<PageTitle>Counter</PageTitle>
-
-<h1>NoChat</h1>
-
-<label for="key">Key</label>
-<p></p>
-<InputText id="key" @bind-Value="Key" />
-<p></p>
-
-<h4>Messages</h4>
-
-<div style="scroll-behavior: auto">
-    @foreach (var message in Messages.TakeLast(10))
-    {
-        <div>@message</div>
+<style>
+    hr {
+        border-top: 8px solid #bbb;
+        border-radius: 5px;
     }
-</div>
------------------------------------------------------------------------
-<p></p>
-<InputText @bind-Value="Message" @onkeyup=MessageKeyPressed/>
-<button class="btn btn-primary" @onclick=SendMessage>Send</button>
+</style>
 
-<p></p>
+<PageTitle>NoChat</PageTitle>
+<h1>NoChat ;)</h1>
+<hr />
 
-<button class="btn btn-primary" @onclick=@ClearMessages>Clear</button>
-
-@code {
-    public string Key { get; set; } = string.Empty;
-    public string Message { get; set; } = string.Empty;
-    public List<string> Messages { get; set; } = new List<string>();
-
-    protected override void OnInitialized()
+@if (hasJoined)
+{
+    <button class="btn btn-primary" disabled=@(!hasJoined) @onclick=@LeaveChat>Dip Out</button>
+    <hr />
+    @foreach (var handle in Users)
     {
-        ChatManager.MessageSent += OnMessageSent;
-        ChatManager.MessagesCleared += OnMessagesCleared;
-        base.OnInitialized();
+        @handle
     }
+    <hr />
+    <label for="message">Message</label>
+    <InputText id="message" style="width: 100%; border-radius: 7px; padding:7px;" disabled=@(!hasJoined) @bind-Value="Message" @onkeyup=MessageKeyPressed />
+    <hr />
 
-    private void OnMessageSent(ChatMessage chatMessage)
-    {
-        if (chatMessage.Key == Key)
-        {
-            Messages.Add(chatMessage.Message);
-            InvokeAsync(StateHasChanged);
-        }
-    }
-
-    private void SendMessage()
-    {
-        if (string.IsNullOrWhiteSpace(Message)) return;
-        ChatManager.SendMessage(new ChatMessage(Key, Message));
-        Message = string.Empty;
-    }
-
-    private void ClearMessages()
-    {
-        ChatManager.ClearMessages(Key);
-        Key = string.Empty;
-        Message = string.Empty;
-    }
-
-    private void MessageKeyPressed(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter")
-        {
-            SendMessage();
-        }
-    }
-
-    private void OnMessagesCleared(string key)
-    {
-        if (Key == key)
-        {
-            Messages.Clear();
-            Key = string.Empty;
-            InvokeAsync(StateHasChanged);
-        }
-    }
-
-    public void Dispose()
-    {
-        ChatManager.MessageSent -= OnMessageSent;
-        ChatManager.MessagesCleared -= OnMessagesCleared;
-    }
+    <div style="background-color:white; border-radius: 7px; padding:7px;">
+        <div class="row align-items-start">
+            @foreach (var message in Messages.TakeLast(20))
+            {
+                <div class="row">
+                    <div class="col-2">
+                        @message.Handle
+                    </div>
+                    <div class="col-2"></div>
+                    <div class="col-8">
+                        @message.Message
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <div class="container">
+        <div class="row align-items-start">
+            <div class="row">
+                <div class="col">
+                    <label for="key">Key</label>
+                    <InputText style="width: 100%; border-radius: 7px; padding:7px;" id="key" disabled=@hasJoined @bind-Value="Key" />
+                </div>
+                <div class="col">
+                    <label for="handle">Handle</label>
+                    <InputText style="width: 100%; border-radius: 7px; padding:7px;" disabled=@hasJoined id="handle" @bind-Value="Handle" />
+                </div>
+            </div>
+            <p></p>
+            <div class="row">
+                <div class="col">
+                    <button class="btn btn-primary" disabled=@hasJoined @onclick=JoinChat>Join</button>
+                </div>
+            </div>
+        </div>
+    </div>
 }
